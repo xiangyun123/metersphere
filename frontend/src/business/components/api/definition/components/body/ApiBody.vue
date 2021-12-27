@@ -30,53 +30,53 @@
         <el-link class="ms-el-link" @click="batchAdd"> {{ $t("commons.batch_add") }}</el-link>
       </el-row>
       <ms-api-variable
-        :with-mor-setting="true"
-        :is-read-only="isReadOnly"
-        :parameters="body.kvs"
-        :isShowEnable="isShowEnable"
-        type="body"/>
+          :with-mor-setting="true"
+          :is-read-only="isReadOnly"
+          :parameters="body.kvs"
+          :isShowEnable="isShowEnable"
+          type="body"/>
     </div>
     <div v-if="body.type == 'JSON'">
       <div style="padding: 10px">
         <el-switch active-text="JSON-SCHEMA" v-model="body.format" @change="formatChange" active-value="JSON-SCHEMA"/>
       </div>
       <ms-json-code-edit
-        v-if="body.format==='JSON-SCHEMA'"
-        :body="body"
-        ref="jsonCodeEdit"/>
+          v-if="body.format==='JSON-SCHEMA'"
+          :body="body"
+          ref="jsonCodeEdit"/>
       <ms-code-edit
-        v-else-if="codeEditActive"
-        :read-only="isReadOnly"
-        :data.sync="body.raw"
-        :modes="modes"
-        :mode="'json'"
-        height="400px"
-        ref="codeEdit"/>
+          v-else-if="codeEditActive"
+          :read-only="isReadOnly"
+          :data.sync="body.raw"
+          :modes="modes"
+          :mode="'json'"
+          height="400px"
+          ref="codeEdit"/>
     </div>
 
     <div class="ms-body" v-if="body.type == 'XML'">
       <ms-code-edit
-        :read-only="isReadOnly"
-        :data.sync="body.raw"
-        :modes="modes"
-        :mode="'text'"
-        ref="codeEdit"/>
+          :read-only="isReadOnly"
+          :data.sync="body.raw"
+          :modes="modes"
+          :mode="'text'"
+          ref="codeEdit"/>
     </div>
 
     <div class="ms-body" v-if="body.type == 'Raw'">
       <ms-code-edit
-        :read-only="isReadOnly"
-        :data.sync="body.raw"
-        :modes="modes"
-        ref="codeEdit"/>
+          :read-only="isReadOnly"
+          :data.sync="body.raw"
+          :modes="modes"
+          ref="codeEdit"/>
     </div>
 
     <ms-api-binary-variable
-      :is-read-only="isReadOnly"
-      :parameters="body.binary"
-      :isShowEnable="isShowEnable"
-      type="body"
-      v-if="body.type == 'BINARY'"/>
+        :is-read-only="isReadOnly"
+        :parameters="body.binary"
+        :isShowEnable="isShowEnable"
+        type="body"
+        v-if="body.type == 'BINARY'"/>
     <batch-add-parameter @batchSave="batchSave" ref="batchAddParameter"/>
   </div>
 </template>
@@ -214,8 +214,15 @@ export default {
     },
     formatChange() {
       const MsConvert = new Convert();
-
       if (this.body.format === 'JSON-SCHEMA') {
+        // 校验是否是正常JSON
+        try {
+          JSON.parse(this.body.raw);
+        } catch (error) {
+          this.$error("当前JSON格式不正确，请正确填写");
+          this.body.format = "JSON";
+          return;
+        }
         if (this.body.raw && !this.body.jsonSchema) {
           this.body.jsonSchema = MsConvert.format(JSON.parse(this.body.raw));
         }
@@ -239,7 +246,7 @@ export default {
         case "WWW_FORM":
           this.setContentType("application/x-www-form-urlencoded");
           break;
-        // todo from data
+          // todo from data
         case "BINARY":
           this.setContentType("application/octet-stream");
           break;
