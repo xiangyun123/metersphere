@@ -774,7 +774,10 @@ export default {
       latest: '最新版',
       set_latest: '设置为最新版本',
       delete_tip: '此版本已经关联系统资源，删除会导致无法查询到版本信息',
-    }
+    },
+    timing_clean_report: "定时清理测试计划报告",
+    keep_recent: "保留最近",
+    please_select_cleaning_time: "请选择清理时间！"
   },
   member: {
     create: '添加成员',

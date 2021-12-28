@@ -770,7 +770,10 @@ export default {
       latest: 'Latest',
       set_latest: 'Latest',
       delete_tip: 'This version has been associated with system resources. Deleting it will cause the version information lost',
-    }
+    },
+    timing_clean_report: "Regularly clean up report",
+    keep_recent: "Keep recent",
+    please_select_cleaning_time: "please select cleaning time！"
   },
   member: {
     create: 'Create',
