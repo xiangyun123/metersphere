@@ -692,4 +692,12 @@ public class ApiScenarioReportService {
         }
         return status;
     }
+
+    public void cleanUpReport(long time) {
+        ApiScenarioReportExample example = new ApiScenarioReportExample();
+        example.createCriteria().andCreateTimeLessThan(time);
+        List<ApiScenarioReport> apiScenarioReports = apiScenarioReportMapper.selectByExample(example);
+        List<String> ids = apiScenarioReports.stream().map(ApiScenarioReport::getId).collect(Collectors.toList());
+        deleteByIds(ids);
+    }
 }

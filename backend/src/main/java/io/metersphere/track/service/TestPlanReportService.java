@@ -1285,4 +1285,12 @@ public class TestPlanReportService {
         }
         TestPlanReportExecuteCatch.remove(planReportId);
     }
+
+    public void cleanUpReport(long time) {
+        TestPlanReportExample example = new TestPlanReportExample();
+        example.createCriteria().andCreateTimeLessThan(time);
+        List<TestPlanReport> testPlanReports = testPlanReportMapper.selectByExample(example);
+        List<String> ids = testPlanReports.stream().map(TestPlanReport::getId).collect(Collectors.toList());
+        delete(ids);
+    }
 }

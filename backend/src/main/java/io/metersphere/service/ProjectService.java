@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import io.metersphere.api.dto.DeleteAPITestRequest;
 import io.metersphere.api.dto.QueryAPITestRequest;
 import io.metersphere.api.service.APITestService;
+import io.metersphere.api.service.ApiScenarioReportService;
 import io.metersphere.api.service.ApiTestDelService;
 import io.metersphere.api.service.ApiTestEnvironmentService;
 import io.metersphere.api.tcp.TCPPool;
@@ -14,6 +15,8 @@ import io.metersphere.base.mapper.ext.ExtProjectVersionMapper;
 import io.metersphere.base.mapper.ext.ExtUserGroupMapper;
 import io.metersphere.base.mapper.ext.ExtUserMapper;
 import io.metersphere.commons.constants.IssuesManagePlatform;
+import io.metersphere.commons.constants.ScheduleGroup;
+import io.metersphere.commons.constants.ScheduleType;
 import io.metersphere.commons.constants.UserGroupConstants;
 import io.metersphere.commons.exception.MSException;
 import io.metersphere.commons.utils.CommonBeanFactory;
@@ -21,9 +24,11 @@ import io.metersphere.commons.utils.LogUtil;
 import io.metersphere.commons.utils.ServiceUtils;
 import io.metersphere.commons.utils.SessionUtils;
 import io.metersphere.controller.request.ProjectRequest;
+import io.metersphere.controller.request.ScheduleRequest;
 import io.metersphere.dto.ProjectDTO;
 import io.metersphere.dto.WorkspaceMemberDTO;
 import io.metersphere.i18n.Translator;
+import io.metersphere.job.sechedule.CleanUpReportJob;
 import io.metersphere.log.utils.ReflexObjectUtil;
 import io.metersphere.log.vo.DetailColumn;
 import io.metersphere.log.vo.OperatingLogDetails;
@@ -34,6 +39,7 @@ import io.metersphere.performance.service.PerformanceReportService;
 import io.metersphere.performance.service.PerformanceTestService;
 import io.metersphere.track.service.TestCaseService;
 import io.metersphere.track.service.TestPlanProjectService;
+import io.metersphere.track.service.TestPlanReportService;
 import io.metersphere.track.service.TestPlanService;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -97,6 +103,10 @@ public class ProjectService {
     private EnvironmentGroupProjectService environmentGroupProjectService;
     @Resource
     private ExtProjectVersionMapper extProjectVersionMapper;
+    @Resource
+    private TestPlanReportService testPlanReportService;
+    @Resource
+    private ApiScenarioReportService apiScenarioReportService;
 
     public Project addProject(Project project) {
         if (StringUtils.isBlank(project.getName())) {
@@ -329,6 +339,7 @@ public class ProjectService {
             testCaseService.updateTestCaseCustomNumByProjectId(project.getId());
         }
         projectMapper.updateByPrimaryKeySelective(project);
+        addOrUpdateCleanUpSchedule(project);
 
         //检查Mock环境是否需要同步更新
         ApiTestEnvironmentService apiTestEnvironmentService = CommonBeanFactory.getBean(ApiTestEnvironmentService.class);
@@ -339,6 +350,33 @@ public class ProjectService {
         } else {
             this.closeMockTcp(project);
         }
+    }
+
+    public void addOrUpdateCleanUpSchedule(Project project) {
+        Boolean cleanTrackReport = project.getCleanTrackReport();
+        Boolean cleanApiReport = project.getCleanApiReport();
+        Boolean cleanLoadReport = project.getCleanLoadReport();
+        // 未设置则不更新定时任务
+        if (cleanTrackReport == null && cleanApiReport == null && cleanLoadReport == null) {
+            return;
+        }
+        String projectId = project.getId();
+        ScheduleRequest request = new ScheduleRequest();
+        request.setName("clean project report");
+        request.setResourceId(projectId);
+        request.setKey(projectId);
+        request.setProjectId(projectId);
+        request.setEnable(BooleanUtils.isTrue(cleanTrackReport) ||
+                BooleanUtils.isTrue(cleanApiReport) ||
+                BooleanUtils.isTrue(cleanLoadReport));
+        request.setGroup(ScheduleGroup.CLEAN_UP_REPORT.name());
+        request.setType(ScheduleType.CRON.name());
+//        request.setValue();
+        request.setJob(CleanUpReportJob.class.getName());
+        scheduleService.addOrUpdateCronJob(request,
+                CleanUpReportJob.getJobKey(projectId),
+                CleanUpReportJob.getTriggerKey(projectId),
+                CleanUpReportJob.class);
     }
 
     private boolean isMockTcpPortIsInRange(int port) {
@@ -773,5 +811,17 @@ public class ProjectService {
 
     public boolean isVersionEnable(String projectId) {
         return extProjectVersionMapper.isVersionEnable(projectId);
+    }
+
+    public void cleanUpTrackReport(long time) {
+        testPlanReportService.cleanUpReport(time);
+    }
+
+    public void cleanUpApiReport(long time) {
+        apiScenarioReportService.cleanUpReport(time);
+    }
+
+    public void cleanUpLoadReport(long time) {
+        performanceReportService.cleanUpReport(time);
     }
 }
