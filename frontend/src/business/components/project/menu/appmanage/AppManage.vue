@@ -26,7 +26,7 @@
                     <el-switch v-model="form.customNum" @change="chooseChange"></el-switch>
                   </template>
                 </app-manage-item>
-                <timing-item :quantity.sync="quantity" :choose.sync="choose" :unit.sync="unit" @chooseChange="chooseChange"/>
+                <timing-item ref="trackTimingItem" :choose.sync="form.cleanTrackReport" :expr.sync="form.cleanTrackReportExpr" @chooseChange="chooseChange"/>
               </el-row>
             </el-tab-pane>
 
@@ -57,7 +57,7 @@
                         <el-switch v-model="form.isMockTcpOpen" @change="chooseChange"></el-switch>
                       </template>
                     </app-manage-item>
-                    <timing-item :quantity.sync="quantity" :choose.sync="choose" :unit.sync="unit" @chooseChange="chooseChange"/>
+                    <timing-item ref="apiTimingItem" :choose.sync="form.cleanApiReport" :expr.sync="form.cleanApiReportExpr" @chooseChange="chooseChange"/>
                   </el-row>
                 </el-col>
                 <el-col :span="8" :offset="4">
@@ -88,7 +88,7 @@
                 <span style="font-weight:bold">{{ this.$t('commons.enable_settings') }}</span>
               </el-row>
               <el-row style="margin-top: 15px">
-                <timing-item :quantity.sync="quantity" :choose.sync="choose" :unit.sync="unit" @chooseChange="chooseChange"/>
+                <timing-item ref="loadTimingItem" :choose.sync="form.cleanLoadReport" :expr.sync="form.cleanLoadReportExpr" @chooseChange="chooseChange"/>
               </el-row>
             </el-tab-pane>
 
@@ -125,7 +125,14 @@ export default {
   data() {
     return {
       activeName: 'test_track',
-      form: {},
+      form: {
+        cleanTrackReport: false,
+        cleanTrackReportExpr: "",
+        cleanApiReport: false,
+        cleanApiReportExpr: "",
+        cleanLoadReport: false,
+        cleanLoadReportExpr: ""
+      },
       count: 0,
       isXpack: false,
       result: {},

@@ -23,7 +23,7 @@
       <span class="timing_name" style="margin-left: 3px;">{{ $t('commons.report') }}</span>
     </template>
     <template #append>
-      <el-switch v-model="selfChoose" @change="handleChange"></el-switch>
+      <el-switch v-model="selfChoose" @change="chooseChange"></el-switch>
     </template>
   </app-manage-item>
 </template>
@@ -37,47 +37,40 @@ export default {
     AppManageItem
   },
   props: {
-    quantity: {
-      type: String,
-      default() {
-        return "";
-      }
-    },
-    unit: {
-      type: String,
-      default() {
-        return "";
-      }
-    },
     choose: {
       type: Boolean,
       default() {
         return false;
       }
+    },
+    expr: {
+      type: String,
+      default() {
+        return "";
+      }
     }
   },
   watch: {
-    selfQuantity(val) {
-      this.$emit("update:quantity", val);
+    expr(val) {
+      this.parseExpr(val);
     },
-    selfUnit(val) {
-      this.$emit("update:unit", val);
-    },
-    selfChoose(val) {
-      this.chooseChange(val);
+    choose(val) {
+      this.selfChoose = val;
     }
   },
   data() {
     return {
       selfQuantity: "",
       selfUnit: "",
-      selfChoose: false,
+      selfChoose: this.choose,
+      selfExpr: this.expr,
       quantityOptions: [
         "1", "2", "3", "4", "5", "6", "7", "8", "9",
-        "10", "11", "12", "13", "14", "15",
-        "16", "17", "18", "19", "20", "21",
-        "22", "23", "24", "25", "26",
-        "27", "28", "29", "30", "31"
+        "10", "11", "12", "13", "14",
+        "15", "16", "17", "18", "19",
+        "20", "21", "22", "23", "24",
+        "25", "26", "27", "28", "29",
+        "30", "31",
       ],
       unitOptions: [
         {value: "D", label: "天"},
@@ -88,15 +81,22 @@ export default {
   },
   methods: {
     chooseChange(val) {
-      this.$emit("update:choose", val);
-      this.$emit("chooseChange");
-    },
-    handleChange(val) {
       if (val && (!this.selfQuantity || !this.selfUnit)) {
         this.$warning(this.$t('project.please_select_cleaning_time'));
         this.selfChoose = false;
         return false;
       }
+      this.$emit("update:choose", val);
+      this.$emit("update:expr", this.selfQuantity + this.selfUnit);
+      this.$emit("chooseChange");
+    },
+    parseExpr(expr) {
+      if (!expr) {
+        return;
+      }
+      // 1D 1M 1Y
+      this.selfUnit = expr.substring(expr.length - 1);
+      this.selfQuantity = expr.substring(0, expr.length - 1);
     }
   }
 }
