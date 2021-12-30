@@ -3,6 +3,7 @@ package io.metersphere.job.sechedule;
 import io.metersphere.base.domain.Project;
 import io.metersphere.commons.constants.ScheduleGroup;
 import io.metersphere.commons.utils.CommonBeanFactory;
+import io.metersphere.commons.utils.LogUtil;
 import io.metersphere.service.ProjectService;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.lang3.BooleanUtils;
@@ -35,14 +36,18 @@ public class CleanUpReportJob extends MsScheduleJob {
         Boolean cleanTrackReport = project.getCleanTrackReport();
         Boolean cleanApiReport = project.getCleanApiReport();
         Boolean cleanLoadReport = project.getCleanLoadReport();
-        if (BooleanUtils.isTrue(cleanTrackReport)) {
-            this.cleanUpTrackReport(project.getCleanTrackReportExpr());
-        }
-        if (BooleanUtils.isTrue(cleanApiReport)) {
-            this.cleanUpApiReport(project.getCleanApiReportExpr());
-        }
-        if (BooleanUtils.isTrue(cleanLoadReport)) {
-            this.cleanUpLoadReport(project.getCleanLoadReportExpr());
+        try {
+            if (BooleanUtils.isTrue(cleanTrackReport)) {
+                this.cleanUpTrackReport(project.getCleanTrackReportExpr());
+            }
+            if (BooleanUtils.isTrue(cleanApiReport)) {
+                this.cleanUpApiReport(project.getCleanApiReportExpr());
+            }
+            if (BooleanUtils.isTrue(cleanLoadReport)) {
+                this.cleanUpLoadReport(project.getCleanLoadReportExpr());
+            }
+        } catch (Exception e) {
+            LogUtil.error(e);
         }
     }
 
@@ -56,17 +61,20 @@ public class CleanUpReportJob extends MsScheduleJob {
 
     private void cleanUpTrackReport(String expr) {
         long time = getCleanDate(expr);
-        projectService.cleanUpTrackReport(time);
+        LoggerUtil.info("clean up track plan report before: " + time);
+        projectService.cleanUpTrackReport(time, resourceId);
     }
 
     private void cleanUpApiReport(String expr) {
         long time = getCleanDate(expr);
-        projectService.cleanUpApiReport(time);
+        LoggerUtil.info("clean up api report before: " + time);
+        projectService.cleanUpApiReport(time, resourceId);
     }
 
     private void cleanUpLoadReport(String expr) {
         long time = getCleanDate(expr);
-        projectService.cleanUpLoadReport(time);
+        LoggerUtil.info("clean up load report before: " + time);
+        projectService.cleanUpLoadReport(time, resourceId);
     }
 
     private long getCleanDate(String expr) {

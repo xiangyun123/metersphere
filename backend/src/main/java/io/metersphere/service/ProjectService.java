@@ -103,6 +103,7 @@ public class ProjectService {
     private EnvironmentGroupProjectService environmentGroupProjectService;
     @Resource
     private ExtProjectVersionMapper extProjectVersionMapper;
+    @Lazy
     @Resource
     private TestPlanReportService testPlanReportService;
     @Resource
@@ -361,22 +362,36 @@ public class ProjectService {
             return;
         }
         String projectId = project.getId();
-        ScheduleRequest request = new ScheduleRequest();
-        request.setName("clean project report");
-        request.setResourceId(projectId);
-        request.setKey(projectId);
-        request.setProjectId(projectId);
-        request.setEnable(BooleanUtils.isTrue(cleanTrackReport) ||
+        Boolean enable = BooleanUtils.isTrue(cleanTrackReport) ||
                 BooleanUtils.isTrue(cleanApiReport) ||
-                BooleanUtils.isTrue(cleanLoadReport));
-        request.setGroup(ScheduleGroup.CLEAN_UP_REPORT.name());
-        request.setType(ScheduleType.CRON.name());
-//        request.setValue();
-        request.setJob(CleanUpReportJob.class.getName());
-        scheduleService.addOrUpdateCronJob(request,
-                CleanUpReportJob.getJobKey(projectId),
-                CleanUpReportJob.getTriggerKey(projectId),
-                CleanUpReportJob.class);
+                BooleanUtils.isTrue(cleanLoadReport);
+        Schedule schedule = scheduleService.getScheduleByResource(projectId, ScheduleGroup.CLEAN_UP_REPORT.name());
+        if (schedule != null && StringUtils.isNotBlank(schedule.getId())) {
+            schedule.setEnable(enable);
+            scheduleService.editSchedule(schedule);
+            scheduleService.addOrUpdateCronJob(schedule,
+                    CleanUpReportJob.getJobKey(projectId),
+                    CleanUpReportJob.getTriggerKey(projectId),
+                    CleanUpReportJob.class);
+        } else {
+            ScheduleRequest request = new ScheduleRequest();
+            request.setName("Clean Report Job");
+            request.setResourceId(projectId);
+            request.setKey(projectId);
+            request.setProjectId(projectId);
+            request.setEnable(enable);
+            request.setUserId(SessionUtils.getUserId());
+            request.setGroup(ScheduleGroup.CLEAN_UP_REPORT.name());
+            request.setType(ScheduleType.CRON.name());
+            // 每天凌晨2点执行
+            request.setValue("0 0 2 * * ?");
+            request.setJob(CleanUpReportJob.class.getName());
+            scheduleService.addSchedule(request);
+            scheduleService.addOrUpdateCronJob(request,
+                    CleanUpReportJob.getJobKey(projectId),
+                    CleanUpReportJob.getTriggerKey(projectId),
+                    CleanUpReportJob.class);
+        }
     }
 
     private boolean isMockTcpPortIsInRange(int port) {
@@ -813,15 +828,24 @@ public class ProjectService {
         return extProjectVersionMapper.isVersionEnable(projectId);
     }
 
-    public void cleanUpTrackReport(long time) {
-        testPlanReportService.cleanUpReport(time);
+    public void cleanUpTrackReport(long time, String projectId) {
+        if (StringUtils.isBlank(projectId)) {
+            return;
+        }
+        testPlanReportService.cleanUpReport(time, projectId);
     }
 
-    public void cleanUpApiReport(long time) {
-        apiScenarioReportService.cleanUpReport(time);
+    public void cleanUpApiReport(long time, String projectId) {
+        if (StringUtils.isBlank(projectId)) {
+            return;
+        }
+        apiScenarioReportService.cleanUpReport(time, projectId);
     }
 
-    public void cleanUpLoadReport(long time) {
-        performanceReportService.cleanUpReport(time);
+    public void cleanUpLoadReport(long time, String projectId) {
+        if (StringUtils.isBlank(projectId)) {
+            return;
+        }
+        performanceReportService.cleanUpReport(time, projectId);
     }
 }
